@@ -1,7 +1,6 @@
 # 1. Import our tools
 import streamlit as st  # This builds the website
 from fpdf import FPDF   # This makes the PDF
-import pywhatkit        # This sends the message
 import os               # This helps us save files on the computer
 
 # 2. Create the "Face" of the app
@@ -50,4 +49,5 @@ if st.button("Generate & Send Prescription"):
         st.success("Message sent to WhatsApp!")
         
     else:
+
         st.error("Please fill in all the details first!")
