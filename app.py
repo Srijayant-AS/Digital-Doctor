@@ -36,18 +36,9 @@ if st.button("Generate & Send Prescription"):
         pdf.output(file_name)
         st.success(f"Step 1 Done: PDF saved as {file_name}!")
         
-        # --- PART B: SEND TO WHATSAPP (The Messenger) ---
-        st.info("Opening WhatsApp Web... Please wait a few seconds!")
         
-        # Create the message text
-        message = f"Hello {patient_name}, here is your prescription from {doctor_name}: \n\n {medicines}"
-        
-        # This command opens your browser and types the message for you
-        # Note: It waits 15 seconds to load WhatsApp, then waits 5 seconds before clicking send (true)
-        pywhatkit.sendwhatmsg_instantly(patient_number, message, 15, True)
-        
-        st.success("Message sent to WhatsApp!")
         
     else:
 
         st.error("Please fill in all the details first!")
+
