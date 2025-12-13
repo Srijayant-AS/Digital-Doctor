@@ -1,22 +1,26 @@
 import streamlit as st
 from fpdf import FPDF
-import base64
 import io
-import qrcode
-from PIL import Image
+import datetime
+import base64 # We need this again to create the link
 
 # ----------------- APP SETUP -----------------
 
-st.title("👨‍⚕️ Digital Prescription Pad (QR Code Delivery)")
-st.write("Fill in the details. The patient will receive a QR code to scan for the PDF.")
+st.title("👨‍⚕️ Digital Prescription Pad (Local Download & Shareable Link)")
+st.write("Generate the PDF and copy the shareable link for the patient.")
 
 # 1. Input Fields
+
+# Input for the Day of Visit (Date)
+date_of_visit = st.date_input("Day of Visit", datetime.date.today())
+
+# Other details
 doctor_name = st.text_input("Doctor Name", "Dr. A. Guide")
 patient_name = st.text_input("Patient Name")
 medicines = st.text_area("List of Medicines & Instructions")
 
 # Function to create the PDF file
-def create_prescription_pdf(doctor, patient, meds):
+def create_prescription_pdf(doctor, patient, meds, visit_date):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=16)
@@ -25,9 +29,10 @@ def create_prescription_pdf(doctor, patient, meds):
     pdf.cell(0, 10, txt=f"Official Prescription by {doctor}", ln=1, align='C')
     pdf.cell(0, 10, txt="---------------------------------------", ln=1, align='C')
     
-    # Patient Info
+    # Patient Info and Date
     pdf.set_font("Arial", size=12)
     pdf.cell(0, 10, txt=f"Patient Name: {patient}", ln=1, align='L')
+    pdf.cell(0, 10, txt=f"Date of Visit: {visit_date.strftime('%B %d, %Y')}", ln=1, align='L')
     pdf.ln(5)
     
     # Medicines
@@ -36,56 +41,47 @@ def create_prescription_pdf(doctor, patient, meds):
     pdf.set_font("Arial", size=12)
     pdf.multi_cell(0, 7, txt=meds)
     
-    # Save the PDF to a bytes object (The digital file content)
+    # Return the PDF content as raw bytes
     pdf_bytes = pdf.output(dest='S').encode('latin-1')
     return pdf_bytes
 
-# Function to generate QR code image
-def generate_qr_code(data):
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Save the QR code image to a bytes object
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
-
 
 # 2. Button Action
-if st.button("Generate Prescription & QR Code"):
+if st.button("Generate Prescription & Link"):
     if patient_name and medicines:
         try:
             # A. Create the PDF file content
-            pdf_bytes = create_prescription_pdf(doctor_name, patient_name, medicines)
+            pdf_bytes = create_prescription_pdf(
+                doctor_name, 
+                patient_name, 
+                medicines, 
+                date_of_visit
+            )
             file_name = f"{patient_name.replace(' ', '_')}_Prescription.pdf"
 
-            # B. Create the Magic Download Link (Base64 encoding)
-            # This line turns the PDF bytes into a single piece of text that can be used as a link.
+            st.success("✅ PDF Generated. See download options below.")
+            
+            # B. Create the Base64 Shareable Link
+            # The entire PDF content is encoded into a massive, unique URL string.
             base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
             download_link_data = f'data:application/pdf;base64,{base64_pdf}'
 
-            # C. Generate the QR Code
-            qr_code_bytes = generate_qr_code(download_link_data)
-            
-            # D. Display Results
-            st.success("✅ Prescription generated successfully!")
-            
-            st.markdown("### 📱 Patient Delivery Method:")
-            st.info("Ask the patient to scan this code with their phone camera to download the PDF.")
-            
-            # Display the QR Code image
-            st.image(qr_code_bytes, caption='Scan this code to download the Prescription', width=250)
-            
-            # Also display the PDF as a download button (Doctor's copy)
+            st.markdown("---")
+            st.markdown("### 🔗 Shareable Download Link")
+            st.info("Copy this entire link and send it to the patient via WhatsApp or Email. When they click it, the download starts.")
+
+            # Display the link in a text area so the doctor can easily copy it
+            st.text_area(
+                label="Copy this Link (Warning: it is very long!)",
+                value=download_link_data,
+                height=150
+            )
+
+            st.markdown("---")
+            st.markdown("### 💾 Doctor's Local Download")
+            # C. Display the Local Download Button
             st.download_button(
-                label="Download PDF (Doctor's Copy)",
+                label=f"⬇️ Download {file_name} to PC/Device",
                 data=pdf_bytes,
                 file_name=file_name,
                 mime="application/pdf"
@@ -95,5 +91,6 @@ if st.button("Generate Prescription & QR Code"):
             st.error(f"❌ An error occurred: {e}")
             
     else:
-        st.error("Please fill in all the patient details.")
+        st.error("Please fill in the Patient Name and Medicines sections.")
+
 
