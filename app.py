@@ -96,3 +96,4 @@ if st.button("Generate Prescription & QR Code"):
             
     else:
         st.error("Please fill in all the patient details.")
+
