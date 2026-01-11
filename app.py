@@ -2,46 +2,44 @@ import streamlit as st
 from fpdf import FPDF
 import io
 import datetime
-import base64 # We need this again to create the link
+import base64 
 
-# ----------------- APP SETUP -----------------
+
 
 st.title("👨‍⚕️ Digital Prescription Pad (Local Download & Shareable Link)")
 st.write("Generate the PDF and copy the shareable link for the patient.")
 
-# 1. Input Fields
 
-# Input for the Day of Visit (Date)
+
+
 date_of_visit = st.date_input("Day of Visit", datetime.date.today())
 
-# Other details
+
 doctor_name = st.text_input("Doctor Name", "Dr. A. Guide")
 patient_name = st.text_input("Patient Name")
 medicines = st.text_area("List of Medicines & Instructions")
-
-# Function to create the PDF file
 def create_prescription_pdf(doctor, patient, meds, visit_date):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=16)
     
-    # Title and Doctor Info
+    
     pdf.cell(0, 10, txt=f"Official Prescription by {doctor}", ln=1, align='C')
     pdf.cell(0, 10, txt="---------------------------------------", ln=1, align='C')
     
-    # Patient Info and Date
+    
     pdf.set_font("Arial", size=12)
     pdf.cell(0, 10, txt=f"Patient Name: {patient}", ln=1, align='L')
     pdf.cell(0, 10, txt=f"Date of Visit: {visit_date.strftime('%B %d, %Y')}", ln=1, align='L')
     pdf.ln(5)
     
-    # Medicines
+    
     pdf.set_font("Arial", 'B', size=14)
     pdf.cell(0, 10, txt="Rx: Medications & Instructions", ln=1, align='L')
     pdf.set_font("Arial", size=12)
     pdf.multi_cell(0, 7, txt=meds)
     
-    # Return the PDF content as raw bytes
+    
     pdf_bytes = pdf.output(dest='S').encode('latin-1')
     return pdf_bytes
 
@@ -50,7 +48,7 @@ def create_prescription_pdf(doctor, patient, meds, visit_date):
 if st.button("Generate Prescription & Link"):
     if patient_name and medicines:
         try:
-            # A. Create the PDF file content
+            
             pdf_bytes = create_prescription_pdf(
                 doctor_name, 
                 patient_name, 
@@ -61,8 +59,8 @@ if st.button("Generate Prescription & Link"):
 
             st.success("✅ PDF Generated. See download options below.")
             
-            # B. Create the Base64 Shareable Link
-            # The entire PDF content is encoded into a massive, unique URL string.
+            
+            
             base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
             download_link_data = f'data:application/pdf;base64,{base64_pdf}'
 
@@ -70,7 +68,7 @@ if st.button("Generate Prescription & Link"):
             st.markdown("### 🔗 Shareable Download Link")
             st.info("Copy this entire link and send it to the patient via WhatsApp or Email. When they click it, the download starts.")
 
-            # Display the link in a text area so the doctor can easily copy it
+            
             st.text_area(
                 label="Copy this Link (Warning: it is very long!)",
                 value=download_link_data,
@@ -79,7 +77,7 @@ if st.button("Generate Prescription & Link"):
 
             st.markdown("---")
             st.markdown("### 💾 Doctor's Local Download")
-            # C. Display the Local Download Button
+            
             st.download_button(
                 label=f"⬇️ Download {file_name} to PC/Device",
                 data=pdf_bytes,
@@ -92,5 +90,6 @@ if st.button("Generate Prescription & Link"):
             
     else:
         st.error("Please fill in the Patient Name and Medicines sections.")
+
 
 
