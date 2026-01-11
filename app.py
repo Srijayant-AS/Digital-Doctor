@@ -44,7 +44,7 @@ def create_prescription_pdf(doctor, patient, meds, visit_date):
     return pdf_bytes
 
 
-# 2. Button Action
+
 if st.button("Generate Prescription & Link"):
     if patient_name and medicines:
         try:
@@ -90,6 +90,7 @@ if st.button("Generate Prescription & Link"):
             
     else:
         st.error("Please fill in the Patient Name and Medicines sections.")
+
 
 
 
