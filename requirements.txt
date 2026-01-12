@@ -1,6 +1,5 @@
 streamlit
 fpdf
-qrcode
-Pillow
+
 
 
