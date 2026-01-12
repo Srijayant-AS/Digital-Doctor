@@ -11,19 +11,34 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. HIDE BRANDING & GITHUB MENU ---
-# This CSS removes the Streamlit footer, header, and the GitHub redirect menu
+# --- 2. THE "TOTAL CLOAK" CSS ---
+# Hides: Hamburger menu, Footer, Header bar, Deploy button, Manage app widget, and status indicators.
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             header {visibility: hidden;}
-            .stAppDeployButton {display:none;} 
+            .stAppDeployButton {display:none;}
+            [data-testid="stStatusWidget"] {display: none;}
+            [data-testid="stAppViewBlockContainer"] {padding-top: 2rem;}
+            /* Disable the focus outline for a cleaner look */
+            *:focus {outline: none !important;}
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-# --- 3. PDF GENERATION LOGIC ---
+# --- 3. SESSION STATE FOR RESETTING FIELDS ---
+# We use this to clear the form without refreshing the whole page.
+if 'patient_name' not in st.session_state:
+    st.session_state.patient_name = ""
+if 'medicines' not in st.session_state:
+    st.session_state.medicines = ""
+
+def clear_form():
+    st.session_state.patient_name = ""
+    st.session_state.medicines = ""
+
+# --- 4. PDF GENERATION LOGIC ---
 def create_prescription_pdf(doctor, patient, meds, visit_date):
     pdf = FPDF()
     pdf.add_page()
@@ -58,7 +73,7 @@ def create_prescription_pdf(doctor, patient, meds, visit_date):
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- 4. APP INTERFACE ---
+# --- 5. APP INTERFACE ---
 
 st.title("👨‍⚕️ Digital Doctor Pad")
 st.write("Professional Prescription Management System")
@@ -68,18 +83,31 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
+    # Doctor name stays saved in session by default
     doctor_name = st.text_input("Doctor Name", "Dr. A. Guide")
-    patient_name = st.text_input("Patient Name")
+    # Patient name is linked to session state for clearing
+    patient_name = st.text_input("Patient Name", key="patient_name")
 
 with col2:
     date_of_visit = st.date_input("Day of Visit", datetime.date.today())
 
-medicines = st.text_area("Prescription (Medicines, Dosage, and Duration)", height=150)
+# Medicines area linked to session state
+medicines = st.text_area("Prescription (Medicines, Dosage, and Duration)", height=150, key="medicines")
+
+# --- 6. ACTION BUTTONS ---
+btn_col1, btn_col2 = st.columns([3, 1])
+
+with btn_col1:
+    generate_pressed = st.button("🚀 Generate Professional Prescription", use_container_width=True)
+
+with btn_col2:
+    # Clicking this triggers the clear_form function
+    if st.button("🗑️ Clear All", on_click=clear_form, use_container_width=True):
+        st.toast("Fields cleared!")
 
 st.markdown("---")
 
-# --- 5. ACTION BUTTON ---
-if st.button("🚀 Generate Professional Prescription"):
+if generate_pressed:
     if patient_name and medicines:
         try:
             # Generate the file
@@ -93,17 +121,15 @@ if st.button("🚀 Generate Professional Prescription"):
 
             st.success("✅ Prescription Successfully Generated!")
 
-            # --- SHAREABLE LINK (Base64) ---
+            # --- SHAREABLE LINK ---
             base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
             download_link_data = f'data:application/pdf;base64,{base64_pdf}'
 
             st.subheader("🔗 Patient Share Link")
-            st.info("Click the icon in the top-right of the box below to copy the whole link.")
+            st.info("Copy the link below and send it to the patient.")
             
-            # This 'st.code' block provides the seamless 'Copy' button automatically
+            # Displays the link with a built-in 'Copy' button
             st.code(download_link_data, language=None)
-
-            st.markdown("---")
 
             # --- LOCAL DOWNLOAD ---
             st.subheader("💾 Doctor's Archive")
@@ -115,9 +141,10 @@ if st.button("🚀 Generate Professional Prescription"):
             )
 
         except Exception as e:
-            st.error(f"❌ An error occurred during generation: {e}")
+            st.error(f"❌ An error occurred: {e}")
     else:
-        st.warning("⚠️ Please enter the Patient Name and Medication details first.")
+        st.warning("⚠️ Please enter the Patient Name and Medication details.")
+
 
 
 
